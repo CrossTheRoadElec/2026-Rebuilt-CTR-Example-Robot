@@ -10,18 +10,26 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Flywheel;
+import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
+import frc.robot.subsystems.Intake.IntakeSetpoint;
 
 public class RobotContainer {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -32,7 +40,6 @@ public class RobotContainer {
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
-    private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
     private final SwerveRequest.RobotCentric forwardStraight = new SwerveRequest.RobotCentric()
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
@@ -41,18 +48,30 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    public final Flywheel flywheel = new Flywheel();
+    public final Intake intake = new Intake();
 
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
-        autoChooser = AutoBuilder.buildAutoChooser("Tests");
+        autoChooser = AutoBuilder.buildAutoChooser("Only Score");
         SmartDashboard.putData("Auto Mode", autoChooser);
+
+        NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel());
+        /* Shoot commands need a bit of time to spool up the flywheel before feeding with the intake */
+        NamedCommands.registerCommand("Shoot Near", flywheel.setTarget(() -> FlywheelSetpoint.Near)
+                                                            .alongWith(Commands.waitSeconds(0.5).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+        NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
+                                                            .alongWith(Commands.waitSeconds(0.5).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+        NamedCommands.registerCommand("Stop Intake", intake.coastIntake());
+        NamedCommands.registerCommand("Intake Fuel", intake.setTarget(()-> IntakeSetpoint.Intake));
+        NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(()-> IntakeSetpoint.Outtake));
 
         configureBindings();
 
         // Warmup PathPlanner to avoid Java pauses
-        FollowPathCommand.warmupCommand().schedule();
+        CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     }
 
     private void configureBindings() {
@@ -75,9 +94,6 @@ public class RobotContainer {
         );
 
         joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
-        joystick.b().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
-        ));
 
         joystick.povUp().whileTrue(drivetrain.applyRequest(() ->
             forwardStraight.withVelocityX(0.5).withVelocityY(0))

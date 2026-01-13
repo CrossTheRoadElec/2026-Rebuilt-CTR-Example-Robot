@@ -3,56 +3,47 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.061722123444247,
-        "y": 5.039
+        "x": 3.580858676207513,
+        "y": 3.9782110912343462
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.267799739805012,
-        "y": 4.6820630981604685
+        "x": 3.3906327064961146,
+        "y": 5.738793411951702
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 5.292790014151457,
-        "y": 4.494829275372837
+        "x": 0.4058977272727272,
+        "y": 5.962375
       },
       "prevControl": {
-        "x": 4.519661364176327,
-        "y": 4.494829275372837
-      },
-      "nextControl": {
-        "x": 5.980046769810262,
-        "y": 4.494829275372837
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 6.152,
-        "y": 5.296
-      },
-      "prevControl": {
-        "x": 6.066179328079686,
-        "y": 4.809286783590948
+        "x": 1.6014886363636358,
+        "y": 5.982988636363636
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Stash Waypoint"
     }
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.0,
-      "rotationDegrees": 90.0
+      "waypointRelativePos": 0.639661426844013,
+      "rotationDegrees": 178.84417410584624
     }
   ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "Intake Fuel",
+      "waypointRelativePos": 0.7219251336898397,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 3,
     "maxAcceleration": 3,
@@ -63,10 +54,10 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 179.40319054877088
   },
   "reversed": false,
-  "folder": null,
+  "folder": "Stash Autos",
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0

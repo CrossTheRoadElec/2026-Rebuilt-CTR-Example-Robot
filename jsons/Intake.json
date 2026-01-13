@@ -1,9 +1,9 @@
 {
     "$schema": "./schema/Flywheel_Schema.json",
     "schema_version": "1",
-    "class_name": "Flywheel",
+    "class_name": "Intake",
     "gear_ratio": 1.0,
-    "moi_kg_sq_m": 0.21,
+    "moi_kg_sq_m": 0.07,
     "encoder": null,
     "motor_initial_configs": [
         {
@@ -37,9 +37,9 @@
     ],
     "motor_controllers": [
         {
-            "name": "leaderMotor",
+            "name": "GroundIndex",
             "device": {
-                "id": 10,
+                "id": 20,
                 "model": "Talon FX",
                 "canbus": "*",
                 "configs": [
@@ -113,9 +113,9 @@
             "orientation": "CounterClockwise_Positive"
         },
         {
-            "name": "followerMotor",
+            "name": "TopIndex",
             "device": {
-                "id": 11,
+                "id": 21,
                 "model": "Talon FX",
                 "canbus": "*",
                 "configs": [
@@ -129,25 +129,78 @@
                                 "param_value": "CounterClockwise_Positive"
                             }
                         ]
+                    },
+                    {
+                        "name": "Feedback",
+                        "params": [
+                            {
+                                "name": "SensorToMechanismRatio",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 1.0
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Slot0",
+                        "params": [
+                            {
+                                "name": "kP",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.0
+                            },
+                            {
+                                "name": "kI",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.0
+                            },
+                            {
+                                "name": "kD",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.0
+                            },
+                            {
+                                "name": "kS",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.0
+                            },
+                            {
+                                "name": "kV",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.12
+                            },
+                            {
+                                "name": "kA",
+                                "units": "",
+                                "type": "double",
+                                "param_value": 0.0
+                            }
+                        ]
                     }
                 ]
             },
-            "leader": {
-                "name": "leaderMotor",
-                "motor_alignment": "Aligned"
-            },
+            "leader": null,
             "motor_arrangement": "TalonFX",
             "orientation": "CounterClockwise_Positive"
         }
     ],
     "setpoints": [
         {
-            "name": "Near",
-            "targets": [40]
+            "name": "Intake",
+            "targets": [80, 80]
         },
         {
-            "name": "Far",
-            "targets": [80]
+            "name": "Outtake",
+            "targets": [-70, -70]
+        },
+        {
+            "name": "FeedToShoot",
+            "targets": [80, -90]
         }
     ]
 }

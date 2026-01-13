@@ -23,13 +23,14 @@ import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -38,15 +39,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Flywheel extends SubsystemBase {
     /** Velocity setpoints for the flywheel. */
-    public enum Setpoint {
+    public enum FlywheelSetpoint {
         Near(RotationsPerSecond.of(40)),
-        Mid(RotationsPerSecond.of(65)),
         Far(RotationsPerSecond.of(80));
 
         /** The velocity target of the setpoint. */
         public final AngularVelocity leaderMotorTarget;
 
-        private Setpoint(AngularVelocity leaderMotorTarget) {
+        private FlywheelSetpoint(AngularVelocity leaderMotorTarget) {
             this.leaderMotorTarget = leaderMotorTarget;
         }
     }
@@ -57,11 +57,10 @@ public class Flywheel extends SubsystemBase {
 
     /* leader and follower motors */
     private final CANBus kCANBus = new CANBus("*");
-    private final TalonFX leaderMotor = new TalonFX(0, kCANBus);
-    private final TalonFX followerMotor = new TalonFX(1, kCANBus);
+    private final TalonFX leaderMotor = new TalonFX(10, kCANBus);
+    private final TalonFX followerMotor = new TalonFX(11, kCANBus);
 
     /* device status signals */
-    private final StatusSignal<Angle> leaderMotorPosition = leaderMotor.getPosition(false);
     private final StatusSignal<AngularVelocity> leaderMotorVelocity = leaderMotor.getVelocity(false);
     private final StatusSignal<Current> leaderMotorTorqueCurrent = leaderMotor.getTorqueCurrent(false);
 
@@ -71,8 +70,8 @@ public class Flywheel extends SubsystemBase {
 
     /* simulation */
     private final DCMotor leaderMotorDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N1, N1, N1> leaderMotorFlywheelSystem = LinearSystemId.createFlywheelSystem(leaderMotorDCMotors, 0.21, kGearRatio);
-    private final FlywheelSim leaderMotorFlywheelSim = new FlywheelSim(leaderMotorFlywheelSystem, leaderMotorDCMotors);
+    private final LinearSystem<N2, N1, N2> leaderMotorFlywheelSystem = LinearSystemId.createDCMotorSystem(leaderMotorDCMotors, 0.21, kGearRatio);
+    private final DCMotorSim leaderMotorFlywheelSim = new DCMotorSim(leaderMotorFlywheelSystem, leaderMotorDCMotors);
 
     private static final double kSimLoopPeriod = 0.002; // 2 ms
     private Notifier simNotifier = null;
@@ -147,13 +146,6 @@ public class Flywheel extends SubsystemBase {
     }
 
     /**
-     * @return The Position of the flywheel
-     */
-    public Angle getPosition() {
-        return leaderMotorPosition.getValue();
-    }
-
-    /**
      * @return The Velocity of the flywheel
      */
     public AngularVelocity getVelocity() {
@@ -173,16 +165,16 @@ public class Flywheel extends SubsystemBase {
      * @param setpoint Function returning the setpoint to apply
      * @return Command to run
      */
-    public Command goToSetpoint(Supplier<Setpoint> setpoint) {
+    public Command setTarget(Supplier<FlywheelSetpoint> target) {
         return run(() -> {
-            Setpoint target = setpoint.get();
-            setpointRequest.withVelocity(target.leaderMotorTarget);
+            FlywheelSetpoint t = target.get();
+            setpointRequest.withVelocity(t.leaderMotorTarget);
             leaderMotor.setControl(setpointRequest);
         });
     }
 
     /**
-     * Stops driving the flywheel. We use coast so not energy is used during the braking event.
+     * Stops driving the Flywheel. We use coast so not energy is used during the braking event.
      *
      * @return Command to run
      */
@@ -196,7 +188,6 @@ public class Flywheel extends SubsystemBase {
     public void periodic() {
         /* refresh all status signals */
         BaseStatusSignal.refreshAll(
-            leaderMotorPosition,
             leaderMotorVelocity,
             leaderMotorTorqueCurrent
         );
@@ -233,8 +224,14 @@ public class Flywheel extends SubsystemBase {
             leaderMotorFlywheelSim.update(deltaTime);
 
             /* Apply the new rotor velocity to the motors (before gear ratio) */
+            leaderMotorSim.setRawRotorPosition(
+                Radians.of(leaderMotorFlywheelSim.getAngularPositionRad() * kGearRatio)
+            );
             leaderMotorSim.setRotorVelocity(
                 RadiansPerSecond.of(leaderMotorFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
+            );
+            followerMotorSim.setRawRotorPosition(
+                Radians.of(leaderMotorFlywheelSim.getAngularPositionRad() * kGearRatio)
             );
             followerMotorSim.setRotorVelocity(
                 RadiansPerSecond.of(leaderMotorFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
