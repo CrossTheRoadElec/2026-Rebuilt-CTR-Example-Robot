@@ -8,20 +8,20 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.048288771360116,
-        "y": 4.984059391614523
+        "x": 1.876682038380748,
+        "y": 5.099426847427409
       },
       "isLocked": false,
       "linkedName": "Stash Waypoint"
     },
     {
       "anchor": {
-        "x": 3.590704545454545,
-        "y": 4.065920454545455
+        "x": 3.5484078711985685,
+        "y": 4.07556350626118
       },
       "prevControl": {
-        "x": 2.8671687958505476,
-        "y": 4.486910701034397
+        "x": 3.3212041598023956,
+        "y": 4.188247356461037
       },
       "nextControl": null,
       "isLocked": false,
@@ -33,10 +33,15 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Stop Intake",
-      "waypointRelativePos": 0.10695187165775404,
+      "name": "Stop Intaking",
+      "waypointRelativePos": 0.1428571428571429,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Stop Intake"
+        }
+      }
     }
   ],
   "globalConstraints": {

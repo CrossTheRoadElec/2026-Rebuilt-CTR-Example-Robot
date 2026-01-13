@@ -186,7 +186,7 @@ public class Flywheel extends SubsystemBase {
      * @return Command to run
      */
     public Command coastFlywheel() {
-        return run(() -> {
+        return runOnce(() -> {
             leaderMotor.setControl(coastRequest);
         });
     }

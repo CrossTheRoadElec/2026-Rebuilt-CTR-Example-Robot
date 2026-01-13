@@ -54,18 +54,18 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
-        autoChooser = AutoBuilder.buildAutoChooser("Only Score");
-        SmartDashboard.putData("Auto Mode", autoChooser);
-
-        NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel());
+        NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel().alongWith(intake.coastIntake()));
         /* Shoot commands need a bit of time to spool up the flywheel before feeding with the intake */
         NamedCommands.registerCommand("Shoot Near", flywheel.setTarget(() -> FlywheelSetpoint.Near)
-                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
-                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Stop Intake", intake.coastIntake());
-        NamedCommands.registerCommand("Intake Fuel", intake.setTarget(()-> IntakeSetpoint.Intake));
-        NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(()-> IntakeSetpoint.Outtake));
+        NamedCommands.registerCommand("Intake Fuel", intake.setTarget(() -> IntakeSetpoint.Intake));
+        NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(() -> IntakeSetpoint.Outtake));
+
+        autoChooser = AutoBuilder.buildAutoChooser("Only Score");
+        SmartDashboard.putData("Auto Mode", autoChooser);
 
         configureBindings();
 

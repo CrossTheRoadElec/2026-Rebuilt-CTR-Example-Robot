@@ -5,15 +5,22 @@
     "data": {
       "commands": [
         {
-          "type": "named",
+          "type": "race",
           "data": {
-            "name": "Shoot Near"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 5.0
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot Near"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 5.0
+                }
+              }
+            ]
           }
         },
         {
@@ -31,19 +38,26 @@
         {
           "type": "path",
           "data": {
-            "pathName": "From Stash Back to Score"
+            "pathName": "From Stash to Score"
           }
         },
         {
-          "type": "named",
+          "type": "race",
           "data": {
-            "name": "Shoot Near"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 5.0
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot Near"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 5.0
+                }
+              }
+            ]
           }
         },
         {

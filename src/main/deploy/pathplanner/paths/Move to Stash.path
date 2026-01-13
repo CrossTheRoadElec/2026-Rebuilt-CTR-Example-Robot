@@ -20,7 +20,7 @@
         "y": 5.962375
       },
       "prevControl": {
-        "x": 1.8122898032200352,
+        "x": 1.8122898032200359,
         "y": 6.0712880143112695
       },
       "nextControl": null,
@@ -38,10 +38,15 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Intake Fuel",
-      "waypointRelativePos": 0.7219251336898397,
+      "name": "Intake",
+      "waypointRelativePos": 0.6952380952380953,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Intake Fuel"
+        }
+      }
     }
   ],
   "globalConstraints": {

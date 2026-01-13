@@ -224,7 +224,7 @@ public class Intake extends SubsystemBase {
      * @return Command to run
      */
     public Command coastIntake() {
-        return run(() -> {
+        return runOnce(() -> {
             TopIndex.setControl(coastRequest);
             GroundIndex.setControl(coastRequest);
         });
