@@ -32,6 +32,7 @@ import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
 import frc.robot.subsystems.Intake.IntakeSetpoint;
 
 public class RobotContainer {
+    private final double TimeToSpoolUp = 0.2;
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
@@ -61,9 +62,9 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel());
         /* Shoot commands need a bit of time to spool up the flywheel before feeding with the intake */
         NamedCommands.registerCommand("Shoot Near", flywheel.setTarget(() -> FlywheelSetpoint.Near)
-                                                            .alongWith(Commands.waitSeconds(0.5).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitSeconds(TimeToSpoolUp).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
-                                                            .alongWith(Commands.waitSeconds(0.5).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitSeconds(TimeToSpoolUp).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Stop Intake", intake.coastIntake());
         NamedCommands.registerCommand("Intake Fuel", intake.setTarget(()-> IntakeSetpoint.Intake));
         NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(()-> IntakeSetpoint.Outtake));

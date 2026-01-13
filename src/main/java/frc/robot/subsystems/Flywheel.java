@@ -146,16 +146,16 @@ public class Flywheel extends SubsystemBase {
     }
 
     /**
-     * @return The Velocity of the flywheel
+     * @return The leaderMotorVelocity of the flywheel
      */
-    public AngularVelocity getVelocity() {
+    public AngularVelocity getleaderMotorVelocity() {
         return leaderMotorVelocity.getValue();
     }
 
     /**
-     * @return The TorqueCurrent of the flywheel
+     * @return The leaderMotorTorqueCurrent of the flywheel
      */
-    public Current getTorqueCurrent() {
+    public Current getleaderMotorTorqueCurrent() {
         return leaderMotorTorqueCurrent.getValue();
     }
 

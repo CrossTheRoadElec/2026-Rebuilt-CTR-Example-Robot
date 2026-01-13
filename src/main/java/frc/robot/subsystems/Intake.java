@@ -43,12 +43,12 @@ public class Intake extends SubsystemBase {
         FeedToShoot(RotationsPerSecond.of(80), RotationsPerSecond.of(-90));
 
         /** The velocity target of the setpoint. */
-        public final AngularVelocity GroundIndexTarget;
         public final AngularVelocity TopIndexTarget;
+        public final AngularVelocity GroundIndexTarget;
 
-        private IntakeSetpoint(AngularVelocity GroundIndexTarget, AngularVelocity TopIndexTarget) {
-            this.GroundIndexTarget = GroundIndexTarget;
+        private IntakeSetpoint(AngularVelocity TopIndexTarget, AngularVelocity GroundIndexTarget) {
             this.TopIndexTarget = TopIndexTarget;
+            this.GroundIndexTarget = GroundIndexTarget;
         }
     }
 
@@ -58,38 +58,38 @@ public class Intake extends SubsystemBase {
 
     /* leader and follower motors */
     private final CANBus kCANBus = new CANBus("*");
-    private final TalonFX GroundIndex = new TalonFX(20, kCANBus);
     private final TalonFX TopIndex = new TalonFX(21, kCANBus);
+    private final TalonFX GroundIndex = new TalonFX(20, kCANBus);
 
     /* device status signals */
-    private final StatusSignal<AngularVelocity> GroundIndexVelocity = GroundIndex.getVelocity(false);
-    private final StatusSignal<Current> GroundIndexTorqueCurrent = GroundIndex.getTorqueCurrent(false);
     private final StatusSignal<AngularVelocity> TopIndexVelocity = TopIndex.getVelocity(false);
     private final StatusSignal<Current> TopIndexTorqueCurrent = TopIndex.getTorqueCurrent(false);
+    private final StatusSignal<AngularVelocity> GroundIndexVelocity = GroundIndex.getVelocity(false);
+    private final StatusSignal<Current> GroundIndexTorqueCurrent = GroundIndex.getTorqueCurrent(false);
 
     /* controls used by the leader motors */
     private final VelocityVoltage setpointRequest = new VelocityVoltage(0);
     private final CoastOut coastRequest = new CoastOut();
 
     /* simulation */
-    private final DCMotor GroundIndexDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N2, N1, N2> GroundIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(GroundIndexDCMotors, 0.07, kGearRatio);
-    private final DCMotorSim GroundIndexFlywheelSim = new DCMotorSim(GroundIndexFlywheelSystem, GroundIndexDCMotors);
     private final DCMotor TopIndexDCMotors = DCMotor.getKrakenX60Foc(2);
     private final LinearSystem<N2, N1, N2> TopIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(TopIndexDCMotors, 0.07, kGearRatio);
     private final DCMotorSim TopIndexFlywheelSim = new DCMotorSim(TopIndexFlywheelSystem, TopIndexDCMotors);
+    private final DCMotor GroundIndexDCMotors = DCMotor.getKrakenX60Foc(2);
+    private final LinearSystem<N2, N1, N2> GroundIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(GroundIndexDCMotors, 0.07, kGearRatio);
+    private final DCMotorSim GroundIndexFlywheelSim = new DCMotorSim(GroundIndexFlywheelSystem, GroundIndexDCMotors);
 
     private static final double kSimLoopPeriod = 0.002; // 2 ms
     private Notifier simNotifier = null;
     private double lastSimTime = 0.0;
 
-    /* Mechanism2d visualization for flywheel GroundIndex */
-    private final Mechanism2d GroundIndexMech2d = new Mechanism2d(2, 2);
-    private final MechanismLigament2d GroundIndexFlywheelMech2d = GroundIndexMech2d.getRoot("Intake Root GroundIndex", 1, 1)
-        .append(new MechanismLigament2d("Intake GroundIndex", 1, 0));/* Mechanism2d visualization for flywheel TopIndex */
+    /* Mechanism2d visualization for flywheel TopIndex */
     private final Mechanism2d TopIndexMech2d = new Mechanism2d(2, 2);
     private final MechanismLigament2d TopIndexFlywheelMech2d = TopIndexMech2d.getRoot("Intake Root TopIndex", 1, 1)
-        .append(new MechanismLigament2d("Intake TopIndex", 1, 0));
+        .append(new MechanismLigament2d("Intake TopIndex", 1, 0));/* Mechanism2d visualization for flywheel GroundIndex */
+    private final Mechanism2d GroundIndexMech2d = new Mechanism2d(2, 2);
+    private final MechanismLigament2d GroundIndexFlywheelMech2d = GroundIndexMech2d.getRoot("Intake Root GroundIndex", 1, 1)
+        .append(new MechanismLigament2d("Intake GroundIndex", 1, 0));
 
     /** Configs common across all motors. */
     private static final TalonFXConfiguration motorTalonFXInitialConfigs = new TalonFXConfiguration()
@@ -101,26 +101,6 @@ public class Intake extends SubsystemBase {
             new CurrentLimitsConfigs()
                 .withStatorCurrentLimit(Amps.of(120))
                 .withStatorCurrentLimitEnable(true)
-        );
-
-    /** Configs for {@link #GroundIndex}. */
-    private final TalonFXConfiguration GroundIndexConfigs = motorTalonFXInitialConfigs.clone()
-        .withMotorOutput(
-            motorTalonFXInitialConfigs.MotorOutput.clone()
-                .withInverted(InvertedValue.CounterClockwise_Positive)
-        )
-        .withFeedback(
-            motorTalonFXInitialConfigs.Feedback.clone()
-                .withSensorToMechanismRatio(1)
-        )
-        .withSlot0(
-            motorTalonFXInitialConfigs.Slot0.clone()
-                .withKP(0)
-                .withKI(0)
-                .withKD(0)
-                .withKS(0)
-                .withKV(0.12)
-                .withKA(0)
         );
 
     /** Configs for {@link #TopIndex}. */
@@ -143,13 +123,33 @@ public class Intake extends SubsystemBase {
                 .withKA(0)
         );
 
+    /** Configs for {@link #GroundIndex}. */
+    private final TalonFXConfiguration GroundIndexConfigs = motorTalonFXInitialConfigs.clone()
+        .withMotorOutput(
+            motorTalonFXInitialConfigs.MotorOutput.clone()
+                .withInverted(InvertedValue.CounterClockwise_Positive)
+        )
+        .withFeedback(
+            motorTalonFXInitialConfigs.Feedback.clone()
+                .withSensorToMechanismRatio(1)
+        )
+        .withSlot0(
+            motorTalonFXInitialConfigs.Slot0.clone()
+                .withKP(0)
+                .withKI(0)
+                .withKD(0)
+                .withKS(0)
+                .withKV(0.12)
+                .withKA(0)
+        );
+
     public Intake() {
         for (int i = 0; i < kNumConfigAttempts; ++i) {
-            var status = GroundIndex.getConfigurator().apply(GroundIndexConfigs);
+            var status = TopIndex.getConfigurator().apply(TopIndexConfigs);
             if (status.isOK()) break;
         }
         for (int i = 0; i < kNumConfigAttempts; ++i) {
-            var status = TopIndex.getConfigurator().apply(TopIndexConfigs);
+            var status = GroundIndex.getConfigurator().apply(GroundIndexConfigs);
             if (status.isOK()) break;
         }
 
@@ -157,27 +157,13 @@ public class Intake extends SubsystemBase {
         /* set the default command to neutral output */
         setDefaultCommand(coastIntake());
 
-        SmartDashboard.putData("Intake GroundIndex", GroundIndexMech2d);
-
         SmartDashboard.putData("Intake TopIndex", TopIndexMech2d);
+
+        SmartDashboard.putData("Intake GroundIndex", GroundIndexMech2d);
 
         if (Utils.isSimulation()) {
             startSimThread();
         }
-    }
-
-    /**
-     * @return The GroundIndexVelocity of the flywheel
-     */
-    public AngularVelocity getGroundIndexVelocity() {
-        return GroundIndexVelocity.getValue();
-    }
-
-    /**
-     * @return The GroundIndexTorqueCurrent of the flywheel
-     */
-    public Current getGroundIndexTorqueCurrent() {
-        return GroundIndexTorqueCurrent.getValue();
     }
 
     /**
@@ -195,6 +181,20 @@ public class Intake extends SubsystemBase {
     }
 
     /**
+     * @return The GroundIndexVelocity of the flywheel
+     */
+    public AngularVelocity getGroundIndexVelocity() {
+        return GroundIndexVelocity.getValue();
+    }
+
+    /**
+     * @return The GroundIndexTorqueCurrent of the flywheel
+     */
+    public Current getGroundIndexTorqueCurrent() {
+        return GroundIndexTorqueCurrent.getValue();
+    }
+
+    /**
      * Drives the flywheel to the provided velocity setpoint.
      *
      * @param setpoint Function returning the setpoint to apply
@@ -203,10 +203,10 @@ public class Intake extends SubsystemBase {
     public Command setTarget(Supplier<IntakeSetpoint> target) {
         return run(() -> {
             IntakeSetpoint t = target.get();
-            setpointRequest.withVelocity(t.GroundIndexTarget);
-            GroundIndex.setControl(setpointRequest);
             setpointRequest.withVelocity(t.TopIndexTarget);
             TopIndex.setControl(setpointRequest);
+            setpointRequest.withVelocity(t.GroundIndexTarget);
+            GroundIndex.setControl(setpointRequest);
         });
     }
 
@@ -217,8 +217,8 @@ public class Intake extends SubsystemBase {
      */
     public Command coastIntake() {
         return run(() -> {
-            GroundIndex.setControl(coastRequest);
             TopIndex.setControl(coastRequest);
+            GroundIndex.setControl(coastRequest);
         });
     }
 
@@ -226,26 +226,26 @@ public class Intake extends SubsystemBase {
     public void periodic() {
         /* refresh all status signals */
         BaseStatusSignal.refreshAll(
-            GroundIndexVelocity,
-            GroundIndexTorqueCurrent,
             TopIndexVelocity,
-            TopIndexTorqueCurrent
-        );
-
-        GroundIndexFlywheelMech2d.setLength(
-            GroundIndexVelocity.getValueAsDouble() / 100.0
+            TopIndexTorqueCurrent,
+            GroundIndexVelocity,
+            GroundIndexTorqueCurrent
         );
 
         TopIndexFlywheelMech2d.setLength(
             TopIndexVelocity.getValueAsDouble() / 100.0
         );
+
+        GroundIndexFlywheelMech2d.setLength(
+            GroundIndexVelocity.getValueAsDouble() / 100.0
+        );
     }
 
     private void startSimThread() {
-        GroundIndex.getSimState().Orientation = ChassisReference.CounterClockwise_Positive;
-        GroundIndex.getSimState().setMotorType(TalonFXSimState.MotorType.KrakenX60);
         TopIndex.getSimState().Orientation = ChassisReference.CounterClockwise_Positive;
         TopIndex.getSimState().setMotorType(TalonFXSimState.MotorType.KrakenX60);
+        GroundIndex.getSimState().Orientation = ChassisReference.CounterClockwise_Positive;
+        GroundIndex.getSimState().setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
         lastSimTime = Utils.getCurrentTimeSeconds();
 
@@ -256,31 +256,31 @@ public class Intake extends SubsystemBase {
             final double deltaTime = currentTime - lastSimTime;
             lastSimTime = currentTime;
 
-            final var GroundIndexSim = GroundIndex.getSimState();
             final var TopIndexSim = TopIndex.getSimState();
+            final var GroundIndexSim = GroundIndex.getSimState();
 
             /* First set the supply voltage of all the devices */
-            GroundIndexSim.setSupplyVoltage(RobotController.getBatteryVoltage());
             TopIndexSim.setSupplyVoltage(RobotController.getBatteryVoltage());
+            GroundIndexSim.setSupplyVoltage(RobotController.getBatteryVoltage());
 
             /* Then calculate the new velocity of the simulated flywheel */
-            GroundIndexFlywheelSim.setInputVoltage(GroundIndexSim.getMotorVoltage());
-            GroundIndexFlywheelSim.update(deltaTime);
             TopIndexFlywheelSim.setInputVoltage(TopIndexSim.getMotorVoltage());
             TopIndexFlywheelSim.update(deltaTime);
+            GroundIndexFlywheelSim.setInputVoltage(GroundIndexSim.getMotorVoltage());
+            GroundIndexFlywheelSim.update(deltaTime);
 
             /* Apply the new rotor velocity to the motors (before gear ratio) */
-            GroundIndexSim.setRawRotorPosition(
-                Radians.of(GroundIndexFlywheelSim.getAngularPositionRad() * kGearRatio)
-            );
-            GroundIndexSim.setRotorVelocity(
-                RadiansPerSecond.of(GroundIndexFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
-            );
             TopIndexSim.setRawRotorPosition(
                 Radians.of(TopIndexFlywheelSim.getAngularPositionRad() * kGearRatio)
             );
             TopIndexSim.setRotorVelocity(
                 RadiansPerSecond.of(TopIndexFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
+            );
+            GroundIndexSim.setRawRotorPosition(
+                Radians.of(GroundIndexFlywheelSim.getAngularPositionRad() * kGearRatio)
+            );
+            GroundIndexSim.setRotorVelocity(
+                RadiansPerSecond.of(GroundIndexFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
             );
         });
         simNotifier.startPeriodic(kSimLoopPeriod);

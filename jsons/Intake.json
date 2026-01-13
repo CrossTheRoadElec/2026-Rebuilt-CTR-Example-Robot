@@ -37,9 +37,9 @@
     ],
     "motor_controllers": [
         {
-            "name": "GroundIndex",
+            "name": "TopIndex",
             "device": {
-                "id": 20,
+                "id": 21,
                 "model": "Talon FX",
                 "canbus": "*",
                 "configs": [
@@ -112,10 +112,11 @@
             "motor_arrangement": "TalonFX",
             "orientation": "CounterClockwise_Positive"
         },
+        
         {
-            "name": "TopIndex",
+            "name": "GroundIndex",
             "device": {
-                "id": 21,
+                "id": 20,
                 "model": "Talon FX",
                 "canbus": "*",
                 "configs": [
