@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.6169836233762935,
-        "y": 6.0993448283062275
+        "x": 2.048288771360116,
+        "y": 4.984059391614523
       },
       "isLocked": false,
       "linkedName": "Stash Waypoint"
@@ -20,8 +20,8 @@
         "y": 4.065920454545455
       },
       "prevControl": {
-        "x": 2.9614825614559566,
-        "y": 4.222312217755118
+        "x": 2.8671687958505476,
+        "y": 4.486910701034397
       },
       "nextControl": null,
       "isLocked": false,
@@ -49,7 +49,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 180.0
   },
   "reversed": false,
   "folder": "Stash Autos",

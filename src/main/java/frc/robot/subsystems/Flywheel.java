@@ -36,6 +36,7 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class Flywheel extends SubsystemBase {
     /** Velocity setpoints for the flywheel. */
@@ -65,12 +66,12 @@ public class Flywheel extends SubsystemBase {
     private final StatusSignal<Current> leaderMotorTorqueCurrent = leaderMotor.getTorqueCurrent(false);
 
     /* controls used by the leader motors */
-    private final VelocityVoltage setpointRequest = new VelocityVoltage(0);
+    private final VelocityVoltage leaderMotorSetpointRequest = new VelocityVoltage(0);
     private final CoastOut coastRequest = new CoastOut();
 
     /* simulation */
     private final DCMotor leaderMotorDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N2, N1, N2> leaderMotorFlywheelSystem = LinearSystemId.createDCMotorSystem(leaderMotorDCMotors, 0.21, kGearRatio);
+    private final LinearSystem<N2, N1, N2> leaderMotorFlywheelSystem = LinearSystemId.createDCMotorSystem(leaderMotorDCMotors, 0.05, kGearRatio);
     private final DCMotorSim leaderMotorFlywheelSim = new DCMotorSim(leaderMotorFlywheelSystem, leaderMotorDCMotors);
 
     private static final double kSimLoopPeriod = 0.002; // 2 ms
@@ -106,7 +107,7 @@ public class Flywheel extends SubsystemBase {
         )
         .withSlot0(
             motorTalonFXInitialConfigs.Slot0.clone()
-                .withKP(0)
+                .withKP(10)
                 .withKI(0)
                 .withKD(0)
                 .withKS(0)
@@ -159,6 +160,12 @@ public class Flywheel extends SubsystemBase {
         return leaderMotorTorqueCurrent.getValue();
     }
 
+    public Trigger getTriggerWhenNearTarget(AngularVelocity threshold) {
+        return new Trigger(() -> {
+            return leaderMotorVelocity.isNear(RotationsPerSecond.of(leaderMotorSetpointRequest.Velocity), threshold);
+        });
+    }
+
     /**
      * Drives the flywheel to the provided velocity setpoint.
      *
@@ -168,13 +175,13 @@ public class Flywheel extends SubsystemBase {
     public Command setTarget(Supplier<FlywheelSetpoint> target) {
         return run(() -> {
             FlywheelSetpoint t = target.get();
-            setpointRequest.withVelocity(t.leaderMotorTarget);
-            leaderMotor.setControl(setpointRequest);
+            leaderMotorSetpointRequest.withVelocity(t.leaderMotorTarget);
+            leaderMotor.setControl(leaderMotorSetpointRequest);
         });
     }
 
     /**
-     * Stops driving the Flywheel. We use coast so not energy is used during the braking event.
+     * Stops driving the Flywheel. We use coast so no energy is used during the braking event.
      *
      * @return Command to run
      */

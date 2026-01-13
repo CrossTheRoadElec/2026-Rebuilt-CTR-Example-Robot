@@ -34,6 +34,7 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class Intake extends SubsystemBase {
     /** Velocity setpoints for the flywheel. */
@@ -68,15 +69,16 @@ public class Intake extends SubsystemBase {
     private final StatusSignal<Current> GroundIndexTorqueCurrent = GroundIndex.getTorqueCurrent(false);
 
     /* controls used by the leader motors */
-    private final VelocityVoltage setpointRequest = new VelocityVoltage(0);
+    private final VelocityVoltage TopIndexSetpointRequest = new VelocityVoltage(0);
+    private final VelocityVoltage GroundIndexSetpointRequest = new VelocityVoltage(0);
     private final CoastOut coastRequest = new CoastOut();
 
     /* simulation */
     private final DCMotor TopIndexDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N2, N1, N2> TopIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(TopIndexDCMotors, 0.07, kGearRatio);
+    private final LinearSystem<N2, N1, N2> TopIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(TopIndexDCMotors, 0.003, kGearRatio);
     private final DCMotorSim TopIndexFlywheelSim = new DCMotorSim(TopIndexFlywheelSystem, TopIndexDCMotors);
     private final DCMotor GroundIndexDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N2, N1, N2> GroundIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(GroundIndexDCMotors, 0.07, kGearRatio);
+    private final LinearSystem<N2, N1, N2> GroundIndexFlywheelSystem = LinearSystemId.createDCMotorSystem(GroundIndexDCMotors, 0.003, kGearRatio);
     private final DCMotorSim GroundIndexFlywheelSim = new DCMotorSim(GroundIndexFlywheelSystem, GroundIndexDCMotors);
 
     private static final double kSimLoopPeriod = 0.002; // 2 ms
@@ -194,6 +196,12 @@ public class Intake extends SubsystemBase {
         return GroundIndexTorqueCurrent.getValue();
     }
 
+    public Trigger getTriggerWhenNearTarget(AngularVelocity threshold) {
+        return new Trigger(() -> {
+            return TopIndexVelocity.isNear(RotationsPerSecond.of(TopIndexSetpointRequest.Velocity), threshold) && GroundIndexVelocity.isNear(RotationsPerSecond.of(GroundIndexSetpointRequest.Velocity), threshold);
+        });
+    }
+
     /**
      * Drives the flywheel to the provided velocity setpoint.
      *
@@ -203,15 +211,15 @@ public class Intake extends SubsystemBase {
     public Command setTarget(Supplier<IntakeSetpoint> target) {
         return run(() -> {
             IntakeSetpoint t = target.get();
-            setpointRequest.withVelocity(t.TopIndexTarget);
-            TopIndex.setControl(setpointRequest);
-            setpointRequest.withVelocity(t.GroundIndexTarget);
-            GroundIndex.setControl(setpointRequest);
+            TopIndexSetpointRequest.withVelocity(t.TopIndexTarget);
+            GroundIndexSetpointRequest.withVelocity(t.GroundIndexTarget);
+            TopIndex.setControl(TopIndexSetpointRequest);
+            GroundIndex.setControl(GroundIndexSetpointRequest);
         });
     }
 
     /**
-     * Stops driving the Intake. We use coast so not energy is used during the braking event.
+     * Stops driving the Intake. We use coast so no energy is used during the braking event.
      *
      * @return Command to run
      */

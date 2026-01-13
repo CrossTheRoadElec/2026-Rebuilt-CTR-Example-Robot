@@ -13,16 +13,14 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -32,7 +30,7 @@ import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
 import frc.robot.subsystems.Intake.IntakeSetpoint;
 
 public class RobotContainer {
-    private final double TimeToSpoolUp = 0.2;
+    private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(6); // Tune to increase accuracy while not sacrificing throughput
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
@@ -62,9 +60,9 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel());
         /* Shoot commands need a bit of time to spool up the flywheel before feeding with the intake */
         NamedCommands.registerCommand("Shoot Near", flywheel.setTarget(() -> FlywheelSetpoint.Near)
-                                                            .alongWith(Commands.waitSeconds(TimeToSpoolUp).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
-                                                            .alongWith(Commands.waitSeconds(TimeToSpoolUp).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Stop Intake", intake.coastIntake());
         NamedCommands.registerCommand("Intake Fuel", intake.setTarget(()-> IntakeSetpoint.Intake));
         NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(()-> IntakeSetpoint.Outtake));
@@ -103,15 +101,22 @@ public class RobotContainer {
             forwardStraight.withVelocityX(-0.5).withVelocityY(0))
         );
 
-        // Run SysId routines when holding back/start and X/Y.
-        // Note that each routine should be run exactly once in a single log.
-        joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        // Bind the start button to set the field-centric forward in case it's lost for whatever reason.
+        joystick.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Reset the field-centric heading on left bumper press.
-        joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        // Bind left bumper/trigger to our intake/outtake
+        joystick.leftBumper().whileTrue(intake.setTarget(()->IntakeSetpoint.Intake));
+        joystick.leftTrigger().whileTrue(intake.setTarget(()->IntakeSetpoint.Outtake));
+
+        // Bind right bumper/trigger to our near/far shots
+        joystick.rightBumper().whileTrue(
+            flywheel.setTarget(()->FlywheelSetpoint.Near) // First spin up the flywheel
+            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
+        );
+        joystick.rightTrigger().whileTrue(
+            flywheel.setTarget(()->FlywheelSetpoint.Far) // First spin up the flywheel
+            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
+        );
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

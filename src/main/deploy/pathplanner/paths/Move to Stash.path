@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.3906327064961146,
-        "y": 5.738793411951702
+        "x": 2.4922169622493437,
+        "y": 4.651620455111901
       },
       "isLocked": false,
       "linkedName": null
@@ -20,8 +20,8 @@
         "y": 5.962375
       },
       "prevControl": {
-        "x": 1.6014886363636358,
-        "y": 5.982988636363636
+        "x": 1.8122898032200352,
+        "y": 6.0712880143112695
       },
       "nextControl": null,
       "isLocked": false,
@@ -31,7 +31,7 @@
   "rotationTargets": [
     {
       "waypointRelativePos": 0.639661426844013,
-      "rotationDegrees": 178.84417410584624
+      "rotationDegrees": 178.84417410584626
     }
   ],
   "constraintZones": [],
@@ -60,7 +60,7 @@
   "folder": "Stash Autos",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 180.0
   },
   "useDefaultConstraints": false
 }

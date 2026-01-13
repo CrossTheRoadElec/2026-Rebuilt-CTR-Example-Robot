@@ -3,7 +3,7 @@
     "schema_version": "1",
     "class_name": "Flywheel",
     "gear_ratio": 1.0,
-    "moi_kg_sq_m": 0.21,
+    "moi_kg_sq_m": 0.05,
     "encoder": null,
     "motor_initial_configs": [
         {
@@ -72,7 +72,7 @@
                                 "name": "kP",
                                 "units": "",
                                 "type": "double",
-                                "param_value": 0.0
+                                "param_value": 10.0
                             },
                             {
                                 "name": "kI",

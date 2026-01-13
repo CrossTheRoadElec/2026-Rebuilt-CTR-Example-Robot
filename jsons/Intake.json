@@ -3,7 +3,7 @@
     "schema_version": "1",
     "class_name": "Intake",
     "gear_ratio": 1.0,
-    "moi_kg_sq_m": 0.07,
+    "moi_kg_sq_m": 0.003,
     "encoder": null,
     "motor_initial_configs": [
         {
