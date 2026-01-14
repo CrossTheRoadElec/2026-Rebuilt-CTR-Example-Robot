@@ -3,7 +3,7 @@
     "schema_version": "1",
     "class_name": "Intake",
     "gear_ratio": 1.0,
-    "moi_kg_sq_m": 0.003,
+    "moi_kg_sq_m": 0.0005,
     "encoder": null,
     "motor_initial_configs": [
         {
@@ -72,84 +72,7 @@
                                 "name": "kP",
                                 "units": "",
                                 "type": "double",
-                                "param_value": 0.0
-                            },
-                            {
-                                "name": "kI",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.0
-                            },
-                            {
-                                "name": "kD",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.0
-                            },
-                            {
-                                "name": "kS",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.0
-                            },
-                            {
-                                "name": "kV",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.12
-                            },
-                            {
-                                "name": "kA",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.0
-                            }
-                        ]
-                    }
-                ]
-            },
-            "leader": null,
-            "motor_arrangement": "TalonFX",
-            "orientation": "CounterClockwise_Positive"
-        },
-        
-        {
-            "name": "GroundIndex",
-            "device": {
-                "id": 20,
-                "model": "Talon FX",
-                "canbus": "*",
-                "configs": [
-                    {
-                        "name": "MotorOutput",
-                        "params": [
-                            {
-                                "name": "Inverted",
-                                "units": "",
-                                "type": "InvertedValue",
-                                "param_value": "CounterClockwise_Positive"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Feedback",
-                        "params": [
-                            {
-                                "name": "SensorToMechanismRatio",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 1.0
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Slot0",
-                        "params": [
-                            {
-                                "name": "kP",
-                                "units": "",
-                                "type": "double",
-                                "param_value": 0.0
+                                "param_value": 0.8
                             },
                             {
                                 "name": "kI",
@@ -193,15 +116,15 @@
     "setpoints": [
         {
             "name": "Intake",
-            "targets": [80, 80]
+            "targets": [80]
         },
         {
             "name": "Outtake",
-            "targets": [-70, -70]
+            "targets": [-70]
         },
         {
             "name": "FeedToShoot",
-            "targets": [80, -90]
+            "targets": [-90]
         }
     ]
 }

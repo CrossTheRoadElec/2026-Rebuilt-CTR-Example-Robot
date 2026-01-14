@@ -30,7 +30,7 @@ import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
 import frc.robot.subsystems.Intake.IntakeSetpoint;
 
 public class RobotContainer {
-    private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(6); // Tune to increase accuracy while not sacrificing throughput
+    private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(3); // Tune to increase accuracy while not sacrificing throughput
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
@@ -60,9 +60,9 @@ public class RobotContainer {
                                                             .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
                                                             .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
-        NamedCommands.registerCommand("Stop Intake", intake.coastIntake());
-        NamedCommands.registerCommand("Intake Fuel", intake.setTarget(() -> IntakeSetpoint.Intake));
-        NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(() -> IntakeSetpoint.Outtake));
+        NamedCommands.registerCommand("Stop Intake", intake.coastIntake().alongWith(flywheel.coastFlywheel()));
+        NamedCommands.registerCommand("Intake Fuel", intake.setTarget(() -> IntakeSetpoint.Intake).alongWith(flywheel.setTarget(()-> FlywheelSetpoint.Intake)));
+        NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(() -> IntakeSetpoint.Outtake).alongWith(flywheel.setTarget(()-> FlywheelSetpoint.Outtake)));
 
         autoChooser = AutoBuilder.buildAutoChooser("Only Score");
         SmartDashboard.putData("Auto Mode", autoChooser);
@@ -105,8 +105,8 @@ public class RobotContainer {
         joystick.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
         // Bind left bumper/trigger to our intake/outtake
-        joystick.leftBumper().whileTrue(intake.setTarget(()->IntakeSetpoint.Intake));
-        joystick.leftTrigger().whileTrue(intake.setTarget(()->IntakeSetpoint.Outtake));
+        joystick.leftBumper().whileTrue(intake.setTarget(()->IntakeSetpoint.Intake).alongWith(flywheel.setTarget(()->FlywheelSetpoint.Intake)));
+        joystick.leftTrigger().whileTrue(intake.setTarget(()->IntakeSetpoint.Outtake).alongWith(flywheel.setTarget(()->FlywheelSetpoint.Outtake)));
 
         // Bind right bumper/trigger to our near/far shots
         joystick.rightBumper().whileTrue(

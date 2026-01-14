@@ -13,11 +13,9 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
-import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
@@ -41,7 +39,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class Flywheel extends SubsystemBase {
     /** Velocity setpoints for the flywheel. */
     public enum FlywheelSetpoint {
-        Near(RotationsPerSecond.of(40)),
+        Intake(RotationsPerSecond.of(80)),
+        Outtake(RotationsPerSecond.of(-80)),
+        Near(RotationsPerSecond.of(70)),
         Far(RotationsPerSecond.of(80));
 
         /** The velocity target of the setpoint. */
@@ -59,7 +59,6 @@ public class Flywheel extends SubsystemBase {
     /* leader and follower motors */
     private final CANBus kCANBus = new CANBus("*");
     private final TalonFX leaderMotor = new TalonFX(10, kCANBus);
-    private final TalonFX followerMotor = new TalonFX(11, kCANBus);
 
     /* device status signals */
     private final StatusSignal<AngularVelocity> leaderMotorVelocity = leaderMotor.getVelocity(false);
@@ -70,8 +69,8 @@ public class Flywheel extends SubsystemBase {
     private final CoastOut coastRequest = new CoastOut();
 
     /* simulation */
-    private final DCMotor leaderMotorDCMotors = DCMotor.getKrakenX60Foc(2);
-    private final LinearSystem<N2, N1, N2> leaderMotorFlywheelSystem = LinearSystemId.createDCMotorSystem(leaderMotorDCMotors, 0.05, kGearRatio);
+    private final DCMotor leaderMotorDCMotors = DCMotor.getKrakenX60Foc(1);
+    private final LinearSystem<N2, N1, N2> leaderMotorFlywheelSystem = LinearSystemId.createDCMotorSystem(leaderMotorDCMotors, 0.004, kGearRatio);
     private final DCMotorSim leaderMotorFlywheelSim = new DCMotorSim(leaderMotorFlywheelSystem, leaderMotorDCMotors);
 
     private static final double kSimLoopPeriod = 0.002; // 2 ms
@@ -107,7 +106,7 @@ public class Flywheel extends SubsystemBase {
         )
         .withSlot0(
             motorTalonFXInitialConfigs.Slot0.clone()
-                .withKP(10)
+                .withKP(0.8)
                 .withKI(0)
                 .withKD(0)
                 .withKS(0)
@@ -115,26 +114,12 @@ public class Flywheel extends SubsystemBase {
                 .withKA(0)
         );
 
-    /** Configs for {@link #followerMotor}. */
-    private final TalonFXConfiguration followerMotorConfigs = motorTalonFXInitialConfigs.clone()
-        .withMotorOutput(
-            motorTalonFXInitialConfigs.MotorOutput.clone()
-                .withInverted(InvertedValue.CounterClockwise_Positive)
-        );
-
     public Flywheel() {
         for (int i = 0; i < kNumConfigAttempts; ++i) {
             var status = leaderMotor.getConfigurator().apply(leaderMotorConfigs);
             if (status.isOK()) break;
         }
-        for (int i = 0; i < kNumConfigAttempts; ++i) {
-            var status = followerMotor.getConfigurator().apply(followerMotorConfigs);
-            if (status.isOK()) break;
-        }
 
-        followerMotor.setControl(
-            new Follower(leaderMotor.getDeviceID(), MotorAlignmentValue.Aligned)
-        );
 
         /* set the default command to neutral output */
         setDefaultCommand(coastFlywheel());
@@ -207,8 +192,6 @@ public class Flywheel extends SubsystemBase {
     private void startSimThread() {
         leaderMotor.getSimState().Orientation = ChassisReference.CounterClockwise_Positive;
         leaderMotor.getSimState().setMotorType(TalonFXSimState.MotorType.KrakenX60);
-        followerMotor.getSimState().Orientation = ChassisReference.CounterClockwise_Positive;
-        followerMotor.getSimState().setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
         lastSimTime = Utils.getCurrentTimeSeconds();
 
@@ -220,11 +203,9 @@ public class Flywheel extends SubsystemBase {
             lastSimTime = currentTime;
 
             final var leaderMotorSim = leaderMotor.getSimState();
-            final var followerMotorSim = followerMotor.getSimState();
 
             /* First set the supply voltage of all the devices */
             leaderMotorSim.setSupplyVoltage(RobotController.getBatteryVoltage());
-            followerMotorSim.setSupplyVoltage(RobotController.getBatteryVoltage());
 
             /* Then calculate the new velocity of the simulated flywheel */
             leaderMotorFlywheelSim.setInputVoltage(leaderMotorSim.getMotorVoltage());
@@ -235,12 +216,6 @@ public class Flywheel extends SubsystemBase {
                 Radians.of(leaderMotorFlywheelSim.getAngularPositionRad() * kGearRatio)
             );
             leaderMotorSim.setRotorVelocity(
-                RadiansPerSecond.of(leaderMotorFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
-            );
-            followerMotorSim.setRawRotorPosition(
-                Radians.of(leaderMotorFlywheelSim.getAngularPositionRad() * kGearRatio)
-            );
-            followerMotorSim.setRotorVelocity(
                 RadiansPerSecond.of(leaderMotorFlywheelSim.getAngularVelocityRadPerSec() * kGearRatio)
             );
         });
