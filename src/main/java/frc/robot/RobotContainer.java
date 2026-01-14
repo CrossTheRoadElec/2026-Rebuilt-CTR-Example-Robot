@@ -21,7 +21,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Flywheel;
@@ -30,7 +30,6 @@ import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
 import frc.robot.subsystems.Intake.IntakeSetpoint;
 
 public class RobotContainer {
-    private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(3); // Tune to increase accuracy while not sacrificing throughput
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
@@ -50,6 +49,10 @@ public class RobotContainer {
     public final Flywheel flywheel = new Flywheel();
     public final Intake intake = new Intake();
 
+    private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(3); // Tune to increase accuracy while not sacrificing throughput
+    /* The flywheel is ready to shoot when it's near the target or when the driver overrides it with the X button */
+    private final Trigger isFlywheelReadyToShoot = flywheel.getTriggerWhenNearTarget(SpinUpThreshold).or(joystick.x());
+
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
 
@@ -57,9 +60,9 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooting", flywheel.coastFlywheel().alongWith(intake.coastIntake()));
         /* Shoot commands need a bit of time to spool up the flywheel before feeding with the intake */
         NamedCommands.registerCommand("Shoot Near", flywheel.setTarget(() -> FlywheelSetpoint.Near)
-                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(isFlywheelReadyToShoot).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Shoot Far", flywheel.setTarget(() -> FlywheelSetpoint.Far)
-                                                            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
+                                                            .alongWith(Commands.waitUntil(isFlywheelReadyToShoot).andThen(intake.setTarget(() ->IntakeSetpoint.FeedToShoot))));
         NamedCommands.registerCommand("Stop Intake", intake.coastIntake().alongWith(flywheel.coastFlywheel()));
         NamedCommands.registerCommand("Intake Fuel", intake.setTarget(() -> IntakeSetpoint.Intake).alongWith(flywheel.setTarget(()-> FlywheelSetpoint.Intake)));
         NamedCommands.registerCommand("Outtake Fuel", intake.setTarget(() -> IntakeSetpoint.Outtake).alongWith(flywheel.setTarget(()-> FlywheelSetpoint.Outtake)));
@@ -111,11 +114,11 @@ public class RobotContainer {
         // Bind right bumper/trigger to our near/far shots
         joystick.rightBumper().whileTrue(
             flywheel.setTarget(()->FlywheelSetpoint.Near) // First spin up the flywheel
-            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
+            .alongWith(Commands.waitUntil(isFlywheelReadyToShoot).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
         );
         joystick.rightTrigger().whileTrue(
             flywheel.setTarget(()->FlywheelSetpoint.Far) // First spin up the flywheel
-            .alongWith(Commands.waitUntil(flywheel.getTriggerWhenNearTarget(SpinUpThreshold)).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
+            .alongWith(Commands.waitUntil(isFlywheelReadyToShoot).andThen(intake.setTarget(()->IntakeSetpoint.FeedToShoot)))
         );
 
         drivetrain.registerTelemetry(logger::telemeterize);
