@@ -1,0 +1,183 @@
+{
+  "hubs": [
+    {
+      "x": -1510,
+      "y": -132,
+      "width": 1516,
+      "height": 966,
+      "state": {
+        "sidebar": {
+          "width": 300,
+          "expanded": [
+            "/CameraPublisher",
+            "/photonvision/camera",
+            "/SmartDashboard",
+            "/SmartDashboard/VisionSystemSim-Camera Sim/Sim Field",
+            "/SmartDashboard/VisionSystemSim-main",
+            "/SmartDashboard/VisionSystemSim-main/Sim Field"
+          ]
+        },
+        "tabs": {
+          "selected": 3,
+          "tabs": [
+            {
+              "type": 0,
+              "title": "",
+              "controller": null,
+              "controllerUUID": "2kx8pu23ocjkt8xago6xu8k2uv58tjct",
+              "renderer": "",
+              "controlsHeight": 0
+            },
+            {
+              "type": 1,
+              "title": "Line Graph",
+              "controller": {
+                "leftSources": [],
+                "rightSources": [],
+                "discreteSources": [],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "qfdd2bz88gwy329dgormltak0fy7az4a",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 2,
+              "title": "2D Field",
+              "controller": {
+                "sources": [],
+                "field": "FRC:2026 Field",
+                "orientation": 0,
+                "size": "large"
+              },
+              "controllerUUID": "9eqvvu5bu88xkh28gfqunsbjb39ujrka",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 3,
+              "title": "3D Field",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/DriveState/Pose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "2026 KitBot",
+                      "color": "#00ff00"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/SmartDashboard/Flywheel leaderMotor",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {
+                      "plane": "xz"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/SmartDashboard/Intake TopIndex",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {
+                      "plane": "yz"
+                    }
+                  },
+                  {
+                    "type": "aprilTagLegacy",
+                    "logKey": "NT:/SmartDashboard/VisionSystemSim-Camera Sim/Sim Field/apriltag",
+                    "logType": "NumberArray",
+                    "visible": true,
+                    "options": {
+                      "variant": "36h11-6.5in"
+                    }
+                  },
+                  {
+                    "type": "robotLegacy",
+                    "logKey": "NT:/SmartDashboard/VisionSystemSim-main/Sim Field/Robot",
+                    "logType": "NumberArray",
+                    "visible": true,
+                    "options": {
+                      "model": "2026 KitBot",
+                      "format": "Pose2d",
+                      "units": "degrees"
+                    }
+                  }
+                ],
+                "game": "FRC:2026 Field"
+              },
+              "controllerUUID": "ddr48ydh6a75jisnfg4dfiyj1ebdmb4y",
+              "renderer": {
+                "cameraIndex": -1,
+                "orbitFov": 50,
+                "cameraPosition": [
+                  9.333869654524612,
+                  6.7408017081160505,
+                  -0.054973491698482396
+                ],
+                "cameraTarget": [
+                  4.8226963620479815,
+                  -0.16386083313163513,
+                  -0.18221461698561864
+                ]
+              },
+              "controlsHeight": 200
+            },
+            {
+              "type": 9,
+              "title": "Swerve",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "states",
+                    "logKey": "NT:/DriveState/ModuleStates",
+                    "logType": "SwerveModuleState[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#ff0000",
+                      "arrangement": "0,1,2,3"
+                    }
+                  },
+                  {
+                    "type": "states",
+                    "logKey": "NT:/DriveState/ModuleTargets",
+                    "logType": "SwerveModuleState[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#0000ff",
+                      "arrangement": "0,1,2,3"
+                    }
+                  }
+                ],
+                "maxSpeed": 5,
+                "sizeX": 0.65,
+                "sizeY": 0.65,
+                "orientation": 1
+              },
+              "controllerUUID": "g1oa4z8lutqporrgyctrck18wg75495z",
+              "renderer": null,
+              "controlsHeight": 200
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "satellites": [],
+  "version": "26.0.0"
+}

@@ -87,10 +87,10 @@ public class Robot extends TimedRobot {
 
     @Override
     public void simulationPeriodic() {
-        var drivetrainState = m_robotContainer.drivetrain.getState();
-        vision.simPeriodic(drivetrainState.Pose);
+        var drivetrainPose = m_robotContainer.drivetrain.m_simOdometry.getPoseMeters();
+        vision.simPeriodic(drivetrainPose);
 
         var debugField = vision.getSimDebugField();
-        debugField.getObject("EstimatedRobot").setPose(drivetrainState.Pose);
+        debugField.getObject("EstimatedRobot").setPose(drivetrainPose);
     }
 }
