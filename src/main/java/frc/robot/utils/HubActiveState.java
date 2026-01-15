@@ -1,5 +1,8 @@
 package frc.robot.utils;
 
+import com.ctre.phoenix6.HootAutoReplay;
+import com.ctre.phoenix6.Utils;
+
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -24,24 +27,30 @@ public class HubActiveState {
             return time >= start && time <= end;
         }
     }
-    private final TimeSegment[] TeleopTimesForAutoWinner = new TimeSegment[] {
+    private final TimeSegment[] TeleopHubActiveTimesForAutoWinner = new TimeSegment[] {
         new TimeSegment(0, 55), // Shift 4 combines with End game
         new TimeSegment((1 * 60) + 20, (1 * 60) + 45), // Shift 2
         new TimeSegment((2 * 60) + 10, (2 * 60) + 20) // Transition Shift
     };
-    private final TimeSegment[] TeleopTimesForAutoLoser = new TimeSegment[] {
+    private final TimeSegment[] TeleopHubActiveTimesForAutoLoser = new TimeSegment[] {
         new TimeSegment(0, 30), // End game
         new TimeSegment(55, (1 * 60) + 20), // Shift 3
         new TimeSegment((1 * 60) + 45, (2 * 60) + 20) // Shift 1 combines with transition shift
     };
+
+    /* True when our hub is active */
+    private boolean isHubActive = false;
+    private double timeUntilTransition = 0;
+    
     /* What to publish over networktables for telemetry */
     private final NetworkTable inst = NetworkTableInstance.getDefault().getTable("Hub");
     private final BooleanPublisher isHubActivePublisher = inst.getBooleanTopic("Active").publish();
     private final DoublePublisher timeUntilSwapPublisher = inst.getDoubleTopic("Time Until Swap").publish();
 
-    /* True when our hub is active */
-    private boolean isHubActive = false;
-    private double timeUntilTransition = 0;
+    /* Hoot auto-log and auto-replay support */
+    private final HootAutoReplay autoReplay = new HootAutoReplay()
+        .withBoolean("Hub/Active", () -> isHubActive, val -> isHubActive = val.value)
+        .withDouble("Hub/Time Until Swap", () -> timeUntilTransition, val -> timeUntilTransition = val.value);
 
     private void updateStatesForTeleop() {
         if (!DriverStation.isTeleopEnabled()) return;
@@ -66,7 +75,7 @@ public class HubActiveState {
 
         /* If we're the winner, use the winner times */
         if (useWinnerTimes) {
-            for (TimeSegment seg : TeleopTimesForAutoWinner) {
+            for (TimeSegment seg : TeleopHubActiveTimesForAutoWinner) {
                 if (seg.isTimeWithin(timeLeftInTeleop)) {
                     timeUntilTransition = timeLeftInTeleop - seg.start;
                     isHubActive = true;
@@ -79,7 +88,7 @@ public class HubActiveState {
                 }
             }
         } else {
-            for (TimeSegment seg : TeleopTimesForAutoLoser) {
+            for (TimeSegment seg : TeleopHubActiveTimesForAutoLoser) {
                 if (seg.isTimeWithin(timeLeftInTeleop)) {
                     timeUntilTransition = timeLeftInTeleop - seg.start;
                     isHubActive = true;
@@ -96,7 +105,7 @@ public class HubActiveState {
         isHubActive = false;
     }
 
-    public void periodic() {
+    private void fetchInputs() {
         /* Check what state we're in */
         if (DriverStation.isDisabled()) {
             /* If we're disabled, the hub is always inactive */
@@ -113,6 +122,14 @@ public class HubActiveState {
             /* This is a state that we don't recognize, so make ti false */
             isHubActive = false;
         }
+    }
+
+    public void periodic() {
+        /* If we're not replaying, then fetch data, otherwise let the autoreplay handle filling in data */
+        if (!Utils.isReplay()) {
+            fetchInputs();
+        }
+        autoReplay.update();
 
         isHubActivePublisher.accept(isHubActive);
         timeUntilSwapPublisher.accept(timeUntilTransition);

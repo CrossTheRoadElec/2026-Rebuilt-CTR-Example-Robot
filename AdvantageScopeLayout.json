@@ -14,7 +14,8 @@
             "/SmartDashboard",
             "/SmartDashboard/VisionSystemSim-Camera Sim/Sim Field",
             "/SmartDashboard/VisionSystemSim-main",
-            "/SmartDashboard/VisionSystemSim-main/Sim Field"
+            "/SmartDashboard/VisionSystemSim-main/Sim Field",
+            "/SmartDashboard/VisionSystemSim-main/Sim Field/visibleTargetPoses"
           ]
         },
         "tabs": {
@@ -117,6 +118,18 @@
                       "format": "Pose2d",
                       "units": "degrees"
                     }
+                  },
+                  {
+                    "type": "coneLegacy",
+                    "logKey": "NT:/SmartDashboard/VisionSystemSim-main/Sim Field/visibleTargetPoses",
+                    "logType": "NumberArray",
+                    "visible": true,
+                    "options": {
+                      "color": "#ff00ff",
+                      "position": "center",
+                      "format": "Pose2d",
+                      "units": "degrees"
+                    }
                   }
                 ],
                 "game": "FRC:2026 Field"
@@ -126,9 +139,9 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  9.333869654524612,
-                  6.7408017081160505,
-                  -0.054973491698482396
+                  10.10443081876998,
+                  5.674329998442158,
+                  0.5141910998862442
                 ],
                 "cameraTarget": [
                   4.8226963620479815,

@@ -3,14 +3,17 @@ package frc.robot.vision;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
-import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
+
+import com.ctre.phoenix6.HootAutoReplay;
+import com.ctre.phoenix6.Utils;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -33,12 +36,19 @@ public class PhotonVisionSystem {
         new Rotation3d(Degrees.of(0), Degrees.of(-20), Degrees.of(0)));
 
     PhotonPoseEstimator estimator = new PhotonPoseEstimator(TagLayout, robotToCamera);
-    Consumer<EstimatedRobotPose> poseConsumer;
+    Consumer<LoggableRobotPose> poseConsumer;
 
     PhotonCameraSim cameraSim = new PhotonCameraSim(targetCamera);
     VisionSystemSim visionSim = new VisionSystemSim("Camera Sim");
+    LoggableRobotPose[] allPoses = new LoggableRobotPose[0];
 
-    public PhotonVisionSystem(Consumer<EstimatedRobotPose> poseConsumer) {
+    /* Hoot replay/autologging */
+    private final HootAutoReplay autoReplay = new HootAutoReplay()
+        /* We need to fetch the latest result from the photoncamera when not replaying, otherwise we need to fill the list of results when we are replaying */
+        .withStructArray("CameraPoseEst/poses", LoggableRobotPose.struct, () -> allPoses, val -> allPoses = val.value);
+    
+
+    public PhotonVisionSystem(Consumer<LoggableRobotPose> poseConsumer) {
         this.poseConsumer = poseConsumer;
 
 
@@ -66,14 +76,30 @@ public class PhotonVisionSystem {
     }
 
     public void periodic() {
-        var targets = targetCamera.getAllUnreadResults();
-        for (var result : targets) {
-            var estimate = estimator.estimateCoprocMultiTagPose(result);
-            if (estimate.isEmpty()) {
-                estimate = estimator.estimateLowestAmbiguityPose(result);
+        if (!Utils.isReplay()) {
+            /* If this is not replay, get the hardware/simulated results from the camera */
+            var allResults = targetCamera.getAllUnreadResults();
+            var estimates = new ArrayList<LoggableRobotPose>();
+            
+            /* Process them */
+            for (var result : allResults) {
+                var estimate = estimator.estimateCoprocMultiTagPose(result);
+                if (estimate.isEmpty()) {
+                    estimate = estimator.estimateLowestAmbiguityPose(result);
+                }
+                estimate.ifPresent(val -> estimates.add(new LoggableRobotPose(val.estimatedPose, val.timestampSeconds)));
             }
 
-            estimate.ifPresent(poseConsumer);
+            /* And save them so we can feed them to the drivetrain */
+            allPoses = estimates.toArray(new LoggableRobotPose[0]);
+        }
+
+        /* Auto-log the poses as they come in, or pull them from the log if we're in replay */
+        autoReplay.update();
+
+        /* And process every pose we got */
+        for(LoggableRobotPose pose : allPoses) {
+            poseConsumer.accept(pose);
         }
     }
 

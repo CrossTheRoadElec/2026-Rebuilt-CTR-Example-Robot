@@ -30,6 +30,8 @@ import frc.robot.subsystems.Flywheel;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Flywheel.FlywheelSetpoint;
 import frc.robot.subsystems.Intake.IntakeSetpoint;
+import frc.robot.vision.LoggableRobotPose;
+import frc.robot.vision.PhotonVisionSystem;
 
 public class RobotContainer {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -50,6 +52,7 @@ public class RobotContainer {
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Flywheel flywheel = new Flywheel();
     public final Intake intake = new Intake();
+    public final PhotonVisionSystem vision = new PhotonVisionSystem(this::consumePhotonVisionMeasurement);
 
     private final AngularVelocity SpinUpThreshold = RotationsPerSecond.of(3); // Tune to increase accuracy while not sacrificing throughput
     /* The flywheel is ready to shoot when it's near the target or when the driver overrides it with the X button */
@@ -131,8 +134,20 @@ public class RobotContainer {
         return autoChooser.getSelected();
     }
 
-    public void consumePhotonVisionMeasurement(EstimatedRobotPose pose) {
+    public void consumePhotonVisionMeasurement(LoggableRobotPose pose) {
         /* Super simple, should modify to support variable standard deviations */
         drivetrain.addVisionMeasurement(pose.estimatedPose.toPose2d(), pose.timestampSeconds);
+    }
+
+    public void periodic() {
+        vision.periodic();
+    }
+
+    public void simulationPeriodic() {
+        var drivetrainPose = drivetrain.m_simOdometry.getPoseMeters();
+        vision.simPeriodic(drivetrainPose);
+
+        var debugField = vision.getSimDebugField();
+        debugField.getObject("EstimatedRobot").setPose(drivetrainPose);
     }
 }
