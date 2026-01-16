@@ -13,7 +13,7 @@ public class LoggableRobotPose {
         this.timestampSeconds = timestampSeconds;
     }
 
-    public static LoggableRobotPoseStruct struct = new LoggableRobotPoseStruct();
+    public static final LoggableRobotPoseStruct struct = new LoggableRobotPoseStruct();
 
     
     public static class LoggableRobotPoseStruct implements Struct<LoggableRobotPose> {

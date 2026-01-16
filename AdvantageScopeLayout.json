@@ -1,21 +1,20 @@
 {
   "hubs": [
     {
-      "x": -1510,
-      "y": -132,
-      "width": 1516,
-      "height": 966,
+      "x": 225,
+      "y": 34,
+      "width": 1443,
+      "height": 920,
       "state": {
         "sidebar": {
-          "width": 300,
+          "width": 242,
           "expanded": [
             "/CameraPublisher",
             "/photonvision/camera",
-            "/SmartDashboard",
             "/SmartDashboard/VisionSystemSim-Camera Sim/Sim Field",
-            "/SmartDashboard/VisionSystemSim-main",
             "/SmartDashboard/VisionSystemSim-main/Sim Field",
-            "/SmartDashboard/VisionSystemSim-main/Sim Field/visibleTargetPoses"
+            "/CameraDetails",
+            "/DriveState"
           ]
         },
         "tabs": {
@@ -100,15 +99,6 @@
                     }
                   },
                   {
-                    "type": "aprilTagLegacy",
-                    "logKey": "NT:/SmartDashboard/VisionSystemSim-Camera Sim/Sim Field/apriltag",
-                    "logType": "NumberArray",
-                    "visible": true,
-                    "options": {
-                      "variant": "36h11-6.5in"
-                    }
-                  },
-                  {
                     "type": "robotLegacy",
                     "logKey": "NT:/SmartDashboard/VisionSystemSim-main/Sim Field/Robot",
                     "logType": "NumberArray",
@@ -130,6 +120,33 @@
                       "format": "Pose2d",
                       "units": "degrees"
                     }
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/DriveState/Pose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "2026 KitBot",
+                      "color": "#ffff00"
+                    }
+                  },
+                  {
+                    "type": "rotationOverride",
+                    "logKey": "NT:/CameraDetails/HubHeading",
+                    "logType": "Rotation2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "cone",
+                    "logKey": "NT:/CameraDetails/HubTarget",
+                    "logType": "Pose3d",
+                    "visible": true,
+                    "options": {
+                      "color": "#0000ff",
+                      "position": "center"
+                    }
                   }
                 ],
                 "game": "FRC:2026 Field"
@@ -139,17 +156,17 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  10.10443081876998,
-                  5.674329998442158,
-                  0.5141910998862442
+                  4.748558265929409,
+                  13.347387344033555,
+                  -0.6204307134559481
                 ],
                 "cameraTarget": [
-                  4.8226963620479815,
-                  -0.16386083313163513,
-                  -0.18221461698561864
+                  3.283695949999894,
+                  -0.5433878099443297,
+                  -0.6623114886662042
                 ]
               },
-              "controlsHeight": 200
+              "controlsHeight": 278
             },
             {
               "type": 9,
