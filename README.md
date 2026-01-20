@@ -54,12 +54,12 @@ The rest of `RobotContainer` is just plumbing what the various buttons on the jo
 - `Left X` - Left and Right Translation (remember field oriented).
 - `Right X` - Rotational Velocity or Rotational "power".
 - `A button` - Lock the modules into an X and apply a braking force.
-- `B button` - Drive toward the hub rotating to keep aligned for shooting **FUEL**.
-- `D-pad povUp` - Drive forward in a straight line
-- `D-pad povDown`- Drive backwards in a straight line
+- `B button` - Allow user translation but orient robot toward to hub.
+- `D-pad povUp` - Drive forward in a straight line.
+- `D-pad povDown`- Drive backwards in a straight line.
 - `Start button` - Re-seed our pose (pressing this would make it so the current orientation is "forwards"). 
-- `Left Bumper` - Intake **FUEL**
-- `Left Trigger` - Eject **FUEL** (in case there is a jam)
+- `Left Bumper` - Intake **FUEL**.
+- `Left Trigger` - Eject **FUEL** (in case there is a jam).
 - `Right Bumper` - Spin the flywheel up to speed and begin shooting for our `NEAR` position.
 - `Right Trigger` - Spin the flywheel up to sped and begin shooting for our `FAR` position.
 
