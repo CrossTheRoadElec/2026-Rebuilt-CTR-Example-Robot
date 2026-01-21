@@ -65,17 +65,104 @@ The rest of `RobotContainer` is just plumbing what the various buttons on the jo
 
 ## Vision Integration
 
+> [!IMPORTANT]
+> This documentation assumes the user has configured their coprocessor running PHotonVision correctly.
+
 Vision samples are provided by [PhotonVision](https://photonvision.org/), a free to use, community developed vision solution that runs on Linux hardware.
 
 A utility class called `PhotonVisionSystem` runs a `periodic` routine (this is a utility class instead of a subsystem, as it doesn't implement any commands or functionality that necessitates it being a subsystem) that integrates PhotonVision pose estimates into odometry and provides a few utility features.
 
-First, we grab the relevant `hubTargetIds` as this is what we localize our robot against. These change depending on what alliance the robot is on.
+There are two goals that the vision system is accomplishing.
+
+1. Grab the best pose from the vision samples we get and fuse it into our odometry.
+2. Get the best hub target and use it as a reference for the `targetHub` swerve request.
+
+### Integrating Vision Estimates into Robot Odometry
+
+The PhotonVision API makes it easy to accomplish goal 1. We begin with constructing a `PhotonPoseEstimator` using the default field tag layout (which is the *current* field each year, assuming your PhotonLib is up-to-date).
+
+> [!IMPORTANT]
+> `robotToCamera` will need to be adjusted to your camera layout. See [PhotonVision documentation](https://docs.photonvision.org/) for more information.
 
 ```java
-/* If this is not replay, get the hardware/simulated results from the camera */
+final AprilTagFieldLayout TagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+
+Transform3d robotToCamera = new Transform3d(
+    /* X, Y, Z */
+    new Translation3d(Meters.of(-0.5), Meters.of(0), Meters.of(0.5)),
+    /* Roll, Pitch, Yaw */
+    /* A pitch of -40 degrees appears to see the apriltags  */
+    new Rotation3d(Degrees.of(0), Degrees.of(-40), Degrees.of(180)));
+
+PhotonPoseEstimator estimator = new PhotonPoseEstimator(TagLayout, robotToCamera);
+```
+
+We iterate through each result, using the `estimator` to calculate a good estimate. We first opt to use the `estimateCoprocMultiTagPose` to calculate a pose estimate based on multiple targets in a capture. This is ideal as the more targets integrated into our capture, the more accurate the pose should be.
+
+Pose estimates returned by the PhotonLib API can be invalid. In the case that our initial estimate is invalid, we try to fall back to the lowest ambiguity pose available. Finally, the estimate is added do an `estimates` collection defined at the top of the file.
+
+```java
 var allResults = targetCamera.getAllUnreadResults();
 var estimates = new ArrayList<LoggableRobotPose>();
+for (var result : allResults) {
+    var estimate = estimator.estimateCoprocMultiTagPose(result);
+    if (estimate.isEmpty()) {
+        estimate = estimator.estimateLowestAmbiguityPose(result);
+    }
+    estimate.ifPresent(val -> estimates.add(new LoggableRobotPose(val.estimatedPose, val.timestampSeconds)));
+}
+```
 
+Now that we have captured all of the pose estimates, integrating them into our robot odometry is as easy as running the `consumePhotonVisionMeasurement` function. In the below example, `poseConsumer` is a `Consumer` that will call the `consumePhotonVisionMeasurement` function when `accept` is run. This allows us to setup logging on our vision estimates as they come in.
+
+```java
+/* And process every pose we got */
+for(LoggableRobotPose pose : allPoses) {
+    poseConsumer.accept(pose);
+}
+```
+
+And that's it! Users will likely want to modify the `consumePhotonVisionMeasurement` to adjust their stddevs (think of this as an error metric on whether to trust vision or odometry more). Information on tuning the pose estimator can be found [here](https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose-estimators.html#tuning-pose-estimators).
+
+### Calculating Hub Position for TargetHub SwerveRequest
+
+As mentioned previously, a `hubTarget` swerve request is defined that will apply a heading target that will ensure the robot is rotationally aligned with the **HUB**. The heading the robot needs to maintain and the location of the **HUB** is calculated from the Photon Vision results. We have a couple of constants we need to setup first.
+
+First, we define the april tag IDs that we care about. Any of these IDs are april tags we can utilize for alignment to the **HUB**.
+
+Second, we define the location of the red **HUB** and blue **HUB** location **relative** to the specified april tag IDs. This is the actual "target" that will be used to align against.
+```java
+/* IDs 3,4 and 19,20 are on the side of the hub that we can't shoot from, so don't include them */
+private final int[] RedHubApriltagIds = new int[]{
+    2, /* 3, 4, */ 5, 8, 9, 10, 11
+};
+private final int[] BlueHubApriltagIds = new int[]{
+    18, /* 19, 20, */ 21, 24, 25, 26, 27
+};
+
+private final ApriltagTarget RedHub = new ApriltagTarget(Map.of(
+    2, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    5, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    8, new Translation3d(Inches.of(-23.5), Inches.of(-14), Inches.of(33)),
+    9, new Translation3d(Inches.of(-23.5), Inches.of(14), Inches.of(33)),
+    10, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    11, new Translation3d(Inches.of(-23.5), Inches.of(14), Inches.of(33))
+));
+
+private final ApriltagTarget BlueHub = new ApriltagTarget(Map.of(
+    18, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    21, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    24, new Translation3d(Inches.of(-23.5), Inches.of(-14), Inches.of(33)),
+    25, new Translation3d(Inches.of(-23.5), Inches.of(14), Inches.of(33)),
+    26, new Translation3d(Inches.of(-23.5), Inches.of(0), Inches.of(33)),
+    27, new Translation3d(Inches.of(-23.5), Inches.of(14), Inches.of(33))
+));
+```
+
+Now, we can begin our calculations to determine what the robot heading should be. Remember that the goal is to align to the **HUB**, not necessarily to a given april tag (which would otherwise be much simpler). We begin with by determining what our alliance is and what `hubTargetIds` to utilize.
+
+```java
+Alliance currentAlliance = DriverStation.getAlliance().orElse(Alliance.Red);
 int[] hubTargetIds;
 /* Figure out if we should use red alliance hub ids or blue alliance hub ids */
 if (currentAlliance == Alliance.Red) {
@@ -85,64 +172,56 @@ if (currentAlliance == Alliance.Red) {
 }
 ```
 
-Then, we start processing through all our vision results (`allResults`). We iterate through all of the targets identified in a sample and find the best target based on an error metric PhotonVision provides called `poseAmbiguity`.
+Now iterate through each result and pick the best april tag based on `poseAmbiguity`.
 
 ```java
-var allTargets = result.getTargets();
-/* Pick the target with the lowest ambiguity */
-PhotonTrackedTarget bestTarget = null;
-for (PhotonTrackedTarget target : allTargets) {
-    /* Check that the apriltag id is a hub ID */
-    if (Arrays.stream(hubTargetIds).anyMatch(x -> x == target.fiducialId)) {
-        /* If we've never assigned the best target, use this one */
-        if (bestTarget == null) {
-            bestTarget = target;
-        }
-        /* Otherwise only update the target if this is a better ambiguity */
-        else if (target.poseAmbiguity < bestTarget.poseAmbiguity && target.poseAmbiguity > 0) {
-            bestTarget = target;
+ for (var result : allResults) {
+    var allTargets = result.getTargets();
+    /* Pick the target with the lowest ambiguity */
+    PhotonTrackedTarget bestTarget = null;
+    for (PhotonTrackedTarget target : allTargets) {
+        /* Check that the apriltag id is a hub ID */
+        if (Arrays.stream(hubTargetIds).anyMatch(x -> x == target.fiducialId)) {
+            /* If we've never assigned the best target, use this one */
+            if (bestTarget == null) {
+                bestTarget = target;
+            }
+            /* Otherwise only update the target if this is a better ambiguity */
+            else if (target.poseAmbiguity < bestTarget.poseAmbiguity && target.poseAmbiguity > 0) {
+                bestTarget = target;
+            }
         }
     }
-}
-```
+    ...
+ }
+ ```
 
-Then we use the target pose information to update some information that could be useful for alignment and logging. The important pieces here is that we save and log `hubTarget` and `hubHeading`. `hubTarget` is the 3D position of the detected hub `AprilTag`. `hubHeading` is the `heading` of the tag relative to the robot. The `hubHeading` is used to orient the robot when we are running the flywheel.
-
-```java
-/* And if we have a best target, use it */
-if (bestTarget != null) {
-    lastTrackedHubTarget = bestTarget;
-    timeOfLastTrackedHubTarget = Utils.getCurrentTimeSeconds();
-    Transform3d tagRelativeToRobot = lastTrackedHubTarget.bestCameraToTarget;
-    var transformToHub = currentAlliance == Alliance.Red ? RedHub.getHubPose(lastTrackedHubTarget.fiducialId) :
-                                            BlueHub.getHubPose(lastTrackedHubTarget.fiducialId);
-    var robotPose = currentRobotPose.get();
-    hubTarget = new Pose3d(robotPose).transformBy(robotToCamera).transformBy(tagRelativeToRobot).transformBy(transformToHub);
-    var hubRelativeToRobot = hubTarget.relativeTo(new Pose3d(robotPose));
-    hubHeading = robotPose.getRotation().plus(hubRelativeToRobot.getTranslation().toTranslation2d().getAngle()
-            .plus(currentAlliance == Alliance.Blue ? Rotation2d.k180deg : Rotation2d.kZero));
-}
-```
-
-Finally, we use the PhotonVision provides pose estimators to calculate robot pose estimates. This is then fed into the `Consumer.accept` (which is really just calling the `consumePhotonVisionMeasurement` function) to integrate into our robot odometry.
+We first grab the location of the tag relative to the robot by utilizing `bestCameraToTarget` member on the target we previously cached. Then we cache the **relative** position of the **HUB** based on the april tag ID that was previously cached.
 
 ```java
-var estimate = estimator.estimateCoprocMultiTagPose(result);
-if (estimate.isEmpty()) {
-    estimate = estimator.estimateLowestAmbiguityPose(result);
-}
-estimate.ifPresent(val -> estimates.add(new LoggableRobotPose(val.estimatedPose, val.timestampSeconds)));
+lastTrackedHubTarget = bestTarget;
+timeOfLastTrackedHubTarget = Utils.getCurrentTimeSeconds();
+Transform3d tagRelativeToRobot = lastTrackedHubTarget.bestCameraToTarget;
+var transformToHub = currentAlliance == Alliance.Red ? RedHub.getHubPose(lastTrackedHubTarget.fiducialId) :
+                                        BlueHub.getHubPose(lastTrackedHubTarget.fiducialId);
 ```
-```java
-/* Auto-log the poses as they come in, or pull them from the log if we're in replay */
-autoReplay.update();
 
-/* And process every pose we got */
-for(LoggableRobotPose pose : allPoses) {
-    poseConsumer.accept(pose);
-}
-hubTargetPublisher.accept(hubTarget);
-hubHeadingPublisher.accept(hubHeading);
+Cache the current robot pose. Then perform a series of transformations to calculate the **field-oriented** (absolute) position of the **HUB**. Breaking this into pieces, we first begin with our absolutely positioned robot pose.
+
+1. `new Pose3d(robotPose)` - turn our 2d robot pose into a 3d robot pose.
+1. `transformBy(robotToCamera)` - now we have the absolute position of the camera on the field.
+1. `transformBy(tagRelativeToRobot)` - now we have the absolute position of the april tag on the field.
+1. `transformBy(transformToHub)` now we have the absolute position of the hub (success!)
+
+```java
+var robotPose = currentRobotPose.get();
+hubTarget = new Pose3d(robotPose).transformBy(robotToCamera).transformBy(tagRelativeToRobot).transformBy(transformToHub);
+```
+
+```java
+var hubRelativeToRobot = hubTarget.relativeTo(new Pose3d(robotPose));
+hubHeading = robotPose.getRotation().plus(hubRelativeToRobot.getTranslation().toTranslation2d().getAngle()
+        .plus(currentAlliance == Alliance.Blue ? Rotation2d.k180deg : Rotation2d.kZero));
 ```
 
 ![](assets/photonvision-pose-visualization.gif)
