@@ -128,6 +128,9 @@ And that's it! Users will likely want to modify the `consumePhotonVisionMeasurem
 
 As mentioned previously, a `hubTarget` swerve request is defined that will apply a heading target that will ensure the robot is rotationally aligned with the **HUB**. The heading the robot needs to maintain and the location of the **HUB** is calculated from the Photon Vision results. We have a couple of constants we need to setup first.
 
+> [!IMPORTANT]
+> We calculate the **HUB** location from pure vision data to ensure that our targetting strategy is robust. Odometry data can be unreliable at times (especially after crossing a bump and waiting on vision data to eventually reseed our odometry over time).
+
 First, we define the april tag IDs that we care about. Any of these IDs are april tags we can utilize for alignment to the **HUB**.
 
 Second, we define the location of the red **HUB** and blue **HUB** location **relative** to the specified april tag IDs. This is the actual "target" that will be used to align against.
@@ -218,10 +221,23 @@ var robotPose = currentRobotPose.get();
 hubTarget = new Pose3d(robotPose).transformBy(robotToCamera).transformBy(tagRelativeToRobot).transformBy(transformToHub);
 ```
 
+Now that we know the absolute position of the hub, we grab the relative position of the **HUB**. This `relativeTo` call is effectively grabbing the position of the **HUB** as if the robot was the origin.
+
+Finally, we need to calculate what the heading of the **HUB** is relative to the robot. This is done by just adding the absolute **HUB** rotation to our absolute robot rotation.
+
 ```java
 var hubRelativeToRobot = hubTarget.relativeTo(new Pose3d(robotPose));
 hubHeading = robotPose.getRotation().plus(hubRelativeToRobot.getTranslation().toTranslation2d().getAngle()
         .plus(currentAlliance == Alliance.Blue ? Rotation2d.k180deg : Rotation2d.kZero));
+```
+
+Then we offset based on whether we are on the red alliance or blue alliance. The output of `hubHeading` is then used (via the `getHeadingToHubFieldRelative()` function) in our aim toward **HUB** logic.
+
+```java
+/* Use the hub target to determine where to aim */
+return targetHub.withTargetDirection(vision.getHeadingToHubFieldRelative())
+    .withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+    .withVelocityY(-joystick.getLeftX() * MaxSpeed); // Drive left with negative X (left)
 ```
 
 ![](assets/photonvision-pose-visualization.gif)
